@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require './lib/court-to-csv'
+
+CourtToCSV::CLI.new.call

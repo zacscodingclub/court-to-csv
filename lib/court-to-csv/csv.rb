@@ -1,0 +1,3 @@
+class CourtToCSV::CSV
+
+end
