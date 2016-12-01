@@ -2,4 +2,4 @@
 
 require './lib/court-to-csv'
 
-CourtToCSV::CLI.new.to_csv
+CourtToCSV::CLI.new.call
