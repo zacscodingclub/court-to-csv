@@ -12,15 +12,16 @@ module CourtToCSV
         { site:"TRAFFIC", county_name:"BALTIMORE COUNTY" },
       ]
 
-      # O(n^2) for now... but not too worried since
-      # getting charge description is bulk of HTTP calls
       date_range.each do |date|
         search_params.each do |params|
           file = scrape_court(date, params)
 
-          new_filename = "#{date.tr(' ', '_')}_#{params[:county_name].tr(' ','_')}_#{params[:site]}.csv".downcase
-          puts "Writing to #{new_filename}"
-          file.save "tmp/#{new_filename}"
+          if file
+            new_filename = "#{date.tr(' ', '_')}_#{params[:county_name].tr(' ','_')}_#{params[:site]}.csv".downcase
+            puts "Writing to #{new_filename}"
+            file.save "tmp/#{new_filename}"
+          end
+
           sleep(0.2)
         end
       end
@@ -39,7 +40,9 @@ module CourtToCSV
       puts "Downloading #{search_params[:site]} data from #{date.tr(' ', '/')}, #{search_params[:county_name]} "
       mech.post("http://casesearch.courts.state.md.us/casesearch/inquirySearch.jis?lastName=+&firstName=&middleName=&partyType=DEF&site=#{search_params[:site]}&courtSystem=B&countyName=#{search_params[:county_name].tr(' ', '+')}&filingStart=&filingEnd=&filingDate=#{date.gsub(' ', '%2F')}&company=N&action=Search")
 
-      mech.page.link_with(:text => 'CSV ').click
+      if mech.page.link_with(:text => 'CSV ')
+        mech.page.link_with(:text => 'CSV ').click
+      end
     end
 
     def self.scrape_traffic_case(traffic_case)
@@ -61,21 +64,55 @@ module CourtToCSV
     end
 
     def self.scrape_criminal_case(criminal_case)
-      binding.pry
       mech = self.mechanize_setup
       mech.get(GATEWAY_URL)
 
       mech.post(criminal_case.url)
+      circuit_and_city = mech.page.search('.Header').text.include?("Circuit") && criminal_case.county != 'county'
 
-      if mech.page.search('.Header').text.include?("Circuit")
-        self.scrape_criminal_circuit_case(mech.page)
-      else
-        self.scrape_criminal_district_case(mech.page)
-      end
+      charges = circuit_and_city ? self.get_charges_from_circuit(mech.page) : self.get_charges_from_district(mech.page)
+      address = circuit_and_city ? mech.page.search('table:nth-child(9) .Value').text : mech.page.search('table:nth-child(10) .Value').children[0].text
+      gender = circuit_and_city ? mech.page.search('table:nth-child(8) .Value')[1].text : mech.page.search('table:nth-child(9) tr+ tr .Value:nth-child(1)').text
+      race = self.scrape_race(mech.page)
+
+      {
+                 address: address,
+                    city: self.getNextElement(mech.page.search("[text()*='City:']")[0]).children[0].text,
+                   state: self.getNextElement(mech.page.search("[text()*='City:']")[0]).children[2].text,
+                 zipcode: self.getNextElement(mech.page.search("[text()*='City:']")[0]).children[4].text,
+                     dob: mech.page.search('table:nth-child(9)').search("[text()*='/']").text,
+                  gender: gender,
+                    race: race,
+      charge_description: charges
+      }
+      # if mech.page.search('.Header').text.include?("Circuit") && criminal_case.county != 'county'
+      #   binding.pry
+      #   self.scrape_criminal_circuit_case(mech.page)
+      # else
+      #   binding.pry
+      #   self.scrape_criminal_district_case(mech.page)
+      # end
+    end
+
+    def self.getNextElement(el)
+      el.parent.next_element
+    end
+
+    def self.scrape_race(page)
+      page.search("[text()*='Race:']").empty? ? "UNK" : self.getNextElement(page.search("[text()*='Race:']")[0]).text
     end
 
     def self.scrape_criminal_circuit_case(page)
-      binding.pry
+      {
+              address: page.search('table:nth-child(9) .Value').text,
+                 city: page.search('table:nth-child(10) .Value').children[0].text,
+                state: page.search('table:nth-child(10) .Value').children[1].text,
+              zipcode: page.search('table:nth-child(10) .Value').children.last.text,
+                  dob: page.search('table:nth-child(8) .Value').last.text,
+               gender: page.search('table:nth-child(8) .Value')[1].text,
+                 race: page.search('table:nth-child(8) .Value')[0].text,
+   charge_description: self.get_charges_from_circuit(page)
+      }
     end
 
     def self.scrape_criminal_district_case(page)
@@ -87,11 +124,16 @@ module CourtToCSV
                   dob: page.search('.Value:nth-child(7)').children[0].text,
                gender: page.search('table:nth-child(9) tr+ tr .Value:nth-child(1)').text,
                  race: page.search('table:nth-child(9) tr:nth-child(1) .Value').text,
-   charge_description: self.get_charges(page)
+   charge_description: self.get_charges_from_district(page)
       }
     end
 
-    def self.get_charges(page)
+    def self.get_charges_from_circuit(page)
+      page.search('.AltBodyWindow1').map do |charge|
+        charge.search('.Value').last.text
+      end
+    end
+    def self.get_charges_from_district(page)
       page.search('.AltBodyWindow1').map do |charge|
         charge.search('.Prompt+.Value')[0].text
       end

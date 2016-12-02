@@ -59,6 +59,10 @@ module CourtToCSV
       county.include?('count') ? "03" : "24"
     end
 
+    def to_csv
+      [case_number, name, address, city, state, zipcode, dob, gender, race, charge_date, charge_description]
+    end
+
     def url
       "http://casesearch.courts.state.md.us/casesearch/inquiryByCaseNum.jis?locationCode=#{county_code}&caseId=#{case_number}&action=Get+Case"
     end

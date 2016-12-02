@@ -8,15 +8,15 @@ module CourtToCSV
       csv_files = Dir['./tmp/*.csv']
 
       csv_files.each_with_index do |file, index|
-        puts "Processing #{index + 1}/#{csv_files.size}"
+        puts "Processing file #{index + 1}/#{csv_files.size}             \n"
         CourtToCSV::CSVHandler.csv_to_cases(file)
       end
 
       all_cases = CourtToCSV::Case.all
-      binding.pry
+
       CourtToCSV::CSVHandler.cases_to_csv(all_cases)
 
-      puts "All Done.  A total of #{all_cases.size} cases were written to the results.csv"
+      puts "All Done.  A total of #{all_cases.size} cases were written to the results/output.csv"
       clear_tmp
     end
 
