@@ -22,7 +22,7 @@ module CourtToCSV
             file.save "tmp/#{new_filename}"
           end
 
-          sleep(0.2)
+          sleep(0.5)
         end
       end
     end
@@ -85,13 +85,6 @@ module CourtToCSV
                     race: race,
       charge_description: charges
       }
-      # if mech.page.search('.Header').text.include?("Circuit") && criminal_case.county != 'county'
-      #   binding.pry
-      #   self.scrape_criminal_circuit_case(mech.page)
-      # else
-      #   binding.pry
-      #   self.scrape_criminal_district_case(mech.page)
-      # end
     end
 
     def self.getNextElement(el)
