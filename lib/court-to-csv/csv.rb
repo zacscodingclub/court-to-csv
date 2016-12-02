@@ -17,7 +17,6 @@ module CourtToCSV
           charge_date: row[7]
         })
         $stdout.flush
-        sleep(0.5)
       end
     end
 

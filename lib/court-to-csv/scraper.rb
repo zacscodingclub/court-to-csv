@@ -22,7 +22,7 @@ module CourtToCSV
             file.save "tmp/#{new_filename}"
           end
 
-          sleep(0.5)
+          sleep(0.4)
         end
       end
     end
@@ -50,7 +50,7 @@ module CourtToCSV
       mech.get(GATEWAY_URL)
 
       mech.post(traffic_case.url)
-
+      sleep(0.4)
       {
               address: mech.page.search('h5~ table+ table td')[0].children.last.text,
                  city: mech.page.search('h5~ table+ table td')[2].children[0].text,
@@ -75,6 +75,7 @@ module CourtToCSV
       gender = circuit_and_city ? mech.page.search('table:nth-child(8) .Value')[1].text : mech.page.search('table:nth-child(9) tr+ tr .Value:nth-child(1)').text
       race = self.scrape_race(mech.page)
 
+      sleep(0.4)
       {
                  address: address,
                     city: self.getNextElement(mech.page.search("[text()*='City:']")[0]).children[0].text,

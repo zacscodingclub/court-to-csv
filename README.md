@@ -1,9 +1,10 @@
 # How to Use
 ```
-#
+# clone repo locally
 > git clone git@github.com:zacscodingclub/court-to-csv.git
+> cd court-to-csv
 
-# installation of dependencies
+# install dependencies
 > bin/setup
 
 # run program
